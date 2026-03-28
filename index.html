@@ -317,3 +317,318 @@ const ROOM_DATA = {
   FOXY_COVE:        { name: "Foxy's Cove", icon: "🦊" },
   KITCHEN:          { name: "Kitchen", icon: "🍕" },
   RESTRICTED_UPPER: { name: "Restricted Upper", icon: "🚧" },
+  RESTRICTED_LOWER: { name: "Restricted Lower", icon: "⚠️" },
+  OFFICE:           { name: "The Office", icon: "🖥️" },
+  CHICKEN_COOP:     { name: "Chicken Coop", icon: "🐥" }
+};
+
+const MAP_LAYOUT = [
+  ['PORCH', 'FRONT_AREA', 'KITCHEN'],
+  ['BEDROOM', 'LIVING_ROOM', 'RESTRICTED_UPPER'],
+  ['FOXY_COVE', 'RESTRICTED_LOWER', 'CHICKEN_COOP'],
+  [null, 'OFFICE', null]
+];
+
+const ADJACENCY = {
+  FRONT_AREA:       ['PORCH', 'LIVING_ROOM', 'KITCHEN'],
+  PORCH:            ['FRONT_AREA', 'BEDROOM'],
+  LIVING_ROOM:      ['FRONT_AREA', 'KITCHEN', 'BEDROOM'],
+  BEDROOM:          ['PORCH', 'LIVING_ROOM', 'FOXY_COVE', 'RESTRICTED_UPPER'],
+  FOXY_COVE:        ['BEDROOM'],
+  KITCHEN:          ['FRONT_AREA', 'LIVING_ROOM', 'RESTRICTED_UPPER'],
+  RESTRICTED_UPPER: ['KITCHEN', 'BEDROOM', 'RESTRICTED_LOWER'],
+  RESTRICTED_LOWER: ['RESTRICTED_UPPER', 'OFFICE'],
+  OFFICE:           ['RESTRICTED_LOWER', 'CHICKEN_COOP'],
+  CHICKEN_COOP:     ['OFFICE']
+};
+
+// ─── Screen Navigation ─────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ─── Lobby Logic ───────────────────────────────────────────────────────────
+function createRoom() {
+  const code = document.getElementById('host-code').value.toUpperCase();
+  const name = document.getElementById('player-name').value;
+  if (!code || !name) return alert("Enter name and code!");
+  myName = name;
+  socket.emit('create_room', code);
+}
+
+function joinRoom() {
+  const code = document.getElementById('join-code').value.toUpperCase();
+  const name = document.getElementById('player-name').value;
+  if (!code || !name) return alert("Enter name and code!");
+  myName = name;
+  socket.emit('join_room', { code, name });
+}
+
+socket.on('room_created', code => {
+  roomCode = code;
+  socket.emit('join_room', { code, name: myName });
+});
+
+socket.on('update_players', pList => {
+  players = pList;
+  showScreen('screen-lobby');
+  document.getElementById('display-room-code').textContent = `ROOM: ${roomCode}`;
+  
+  const listEl = document.getElementById('lobby-player-list');
+  listEl.innerHTML = "";
+  players.forEach(p => {
+    const li = document.createElement('li');
+    li.className = 'player-item';
+    li.innerHTML = `<span>${p.name}</span> <span style="color:var(--green)">${p.role || 'Choosing...'}</span>`;
+    listEl.appendChild(li);
+  });
+
+  // Highlight taken roles
+  document.querySelectorAll('.role-btn').forEach(btn => {
+    const r = btn.id.split('-')[1];
+    const isTaken = players.some(p => p.role === r);
+    btn.classList.toggle('taken', isTaken);
+    btn.classList.toggle('selected', myRole === r);
+  });
+});
+
+function selectRole(role) {
+  socket.emit('select_role', role);
+  myRole = role;
+}
+
+function startGame() {
+  socket.emit('start_game');
+}
+
+socket.on('error_msg', msg => alert(msg));
+
+// ─── Game Logic ────────────────────────────────────────────────────────────
+socket.on('game_init', ({ players: serverPlayers, state }) => {
+  showScreen('screen-game');
+  players = Object.values(serverPlayers);
+  myPos = state.positions[myRole];
+  
+  if (myRole === 'nightguard') {
+    document.getElementById('guard-ui').classList.remove('hidden');
+    document.getElementById('music-container').classList.remove('hidden');
+  } else {
+    document.getElementById('music-container').classList.add('hidden');
+  }
+
+  updateMap();
+  updateRoomView();
+});
+
+function updateMap() {
+  const grid = document.getElementById('map-grid');
+  grid.innerHTML = "";
+  
+  MAP_LAYOUT.forEach(row => {
+    row.forEach(nodeKey => {
+      const node = document.createElement('div');
+      if (!nodeKey) {
+        node.style.visibility = "hidden";
+      } else {
+        node.className = 'map-node';
+        node.textContent = ROOM_DATA[nodeKey].name;
+        if (nodeKey === myPos) node.classList.add('current');
+        
+        // Show adjacency if it's a step event
+        if (isStepActive && ADJACENCY[myPos].includes(nodeKey)) {
+          node.classList.add('adjacent');
+          node.onclick = () => move(nodeKey);
+        }
+      }
+      grid.appendChild(node);
+    });
+  });
+}
+
+function updateRoomView() {
+  const data = ROOM_DATA[myPos];
+  document.getElementById('current-room-name').textContent = data.name;
+  document.getElementById('room-icon').textContent = data.icon;
+
+  const presence = document.getElementById('room-presence');
+  presence.innerHTML = "";
+  
+  players.forEach(p => {
+    if (p.pos === myPos) {
+      const badge = document.createElement('div');
+      badge.className = 'p-badge';
+      badge.style.borderColor = `var(--${p.role})`;
+      badge.textContent = getRoleEmoji(p.role);
+      presence.appendChild(badge);
+    }
+  });
+}
+
+function getRoleEmoji(role) {
+  if (role === 'freddy') return '🐻';
+  if (role === 'chica') return '🐥';
+  if (role === 'bonnie') return '🐰';
+  if (role === 'foxy') return '🦊';
+  return '👮';
+}
+
+function move(target) {
+  if (!isStepActive) return;
+  socket.emit('move', target);
+  myPos = target;
+  isStepActive = false;
+  document.getElementById('step-alert').style.display = 'none';
+  updateMap();
+  updateRoomView();
+}
+
+// ─── Socket Listeners (State) ─────────────────────────────────────────────
+socket.on('timer_update', seconds => {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  document.getElementById('game-timer').textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+});
+
+socket.on('power_update', p => {
+  document.getElementById('bar-power').style.width = p + "%";
+});
+
+socket.on('music_update', m => {
+  document.getElementById('bar-music').style.width = m + "%";
+});
+
+socket.on('step_event', () => {
+  if (myRole === 'nightguard') return;
+  isStepActive = true;
+  document.getElementById('step-alert').style.display = 'block';
+  updateMap();
+});
+
+socket.on('update_positions', posMap => {
+  players.forEach(p => { p.pos = posMap[p.role]; });
+  updateRoomView();
+  updateMap();
+});
+
+socket.on('notif_all', msg => {
+  const log = document.getElementById('notif-log');
+  const div = document.createElement('div');
+  div.className = 'notif';
+  div.textContent = msg;
+  log.appendChild(div);
+  setTimeout(() => div.remove(), 5000);
+});
+
+// ─── Guard Controls ────────────────────────────────────────────────────────
+function toggleDoor() {
+  socket.emit('toggle_door');
+}
+socket.on('door_update', isOpen => {
+  const btn = document.getElementById('door-btn');
+  btn.classList.toggle('active', isOpen);
+  btn.textContent = isOpen ? "DOOR CLOSED" : "DOOR OPEN";
+});
+
+function windMusic() {
+  socket.emit('wind_music');
+}
+
+function goBrb() {
+  document.getElementById('screen-brb').style.display = 'flex';
+  document.getElementById('return-btn').classList.remove('hidden');
+  socket.emit('brb_toggle', true);
+}
+
+function returnToOffice() {
+  document.getElementById('screen-brb').style.display = 'none';
+  socket.emit('brb_toggle', false);
+}
+
+// ─── Power Out Logic ───────────────────────────────────────────────────────
+socket.on('power_out', () => {
+  document.body.classList.add('flash-red');
+  if (myRole === 'nightguard') {
+    goBrb();
+    document.getElementById('return-btn').classList.add('hidden');
+    document.getElementById('power-restore-ui').classList.remove('hidden');
+    document.getElementById('door-btn').disabled = true;
+  }
+});
+
+function startRestore() {
+  restoreProgress = 0;
+  restoreTimer = setInterval(() => {
+    restoreProgress += 2;
+    document.getElementById('brb-power-fill').style.height = restoreProgress + "%";
+    if (restoreProgress >= 100) {
+      clearInterval(restoreTimer);
+      socket.emit('restore_power');
+    }
+  }, 50);
+}
+
+function stopRestore() {
+  clearInterval(restoreTimer);
+  restoreProgress = 0;
+  document.getElementById('brb-power-fill').style.height = "0%";
+}
+
+socket.on('power_restored', () => {
+  document.body.classList.remove('flash-red');
+  if (myRole === 'nightguard') {
+    document.getElementById('power-restore-ui').classList.add('hidden');
+    document.getElementById('return-btn').classList.remove('hidden');
+    document.getElementById('door-btn').disabled = false;
+    returnToOffice();
+  }
+});
+
+// ─── Game Over ─────────────────────────────────────────────────────────────
+function flashDanger() {
+  document.body.style.background = "red";
+  setTimeout(() => { document.body.style.background = "black"; }, 100);
+}
+
+socket.on('game_over', ({ winner, reason }) => {
+  showScreen('screen-gameover');
+  const titleEl = document.getElementById('go-title');
+  const iconEl  = document.getElementById('go-icon');
+  const reasonEl = document.getElementById('go-reason');
+  reasonEl.textContent = reason;
+  if (winner === 'nightguard') {
+    titleEl.textContent = '🌅 YOU SURVIVED!';
+    titleEl.className = 'go-title nightguard-wins';
+    iconEl.textContent = '🌅';
+  } else {
+    titleEl.textContent = 'GAME OVER';
+    titleEl.className = 'go-title animatronics-win';
+    iconEl.textContent = '💀';
+    flashDanger(); flashDanger();
+  }
+});
+
+// ─── Keyboard Controls ─────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  const active = document.querySelector('.screen.active')?.id;
+  if (e.code === 'Space' && myRole === 'nightguard' && active === 'screen-game') {
+    e.preventDefault();
+    toggleDoor();
+  }
+  if (e.code === 'Enter') {
+    const active2 = document.querySelector('.screen.active')?.id;
+    if (active2 === 'screen-brb') returnToOffice();
+  }
+});
+
+// ─── Enter key helpers for menu forms ─────────────────────────────────────
+document.getElementById('host-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') createRoom();
+});
+document.getElementById('join-code').addEventListener('keydown', e => {
+  if (e.key === 'Enter') joinRoom();
+});
+
+  </script>
+</body>
+</html>
