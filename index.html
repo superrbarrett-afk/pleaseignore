@@ -34,1472 +34,286 @@ html, body {
   color: #ccc;
   font-family: 'Share Tech Mono', 'Courier New', monospace;
   overflow: hidden;
+  user-select: none;
 }
 
-body::before {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.15) 2px,
-    rgba(0,0,0,0.15) 4px
-  );
-  pointer-events: none; z-index: 9999;
+/* ──────────────── SCREENS ──────────────── */
+.screen {
+  display: none;
+  width: 100%; height: 100%;
+  position: absolute; top: 0; left: 0;
+  flex-direction: column; align-items: center; justify-content: center;
+  padding: 20px;
 }
+.screen.active { display: flex; }
 
-.screen { display: none; width: 100%; height: 100vh; overflow: auto; }
-.screen.active { display: flex; flex-direction: column; }
+/* ──────────────── TITLES ──────────────── */
+h1 { font-family: 'Creepster', cursive; font-size: 4rem; color: var(--red); text-shadow: 0 0 20px rgba(255,0,0,0.5); margin-bottom: 20px; }
+h2 { font-family: 'Creepster', cursive; color: var(--red); margin-bottom: 20px; }
 
-/* ──────────────── NOISE OVERLAY ──────────────── */
-@keyframes noise {
-  0%,100% { opacity:.03; transform: translate(0,0); }
-  10%      { transform: translate(-1px, 1px); }
-  20%      { transform: translate(1px, -1px); opacity:.05; }
-  50%      { transform: translate(-1px, -1px); }
-  70%      { transform: translate(1px, 1px); opacity:.02; }
+/* ──────────────── UI COMPONENTS ──────────────── */
+.input-group { margin: 10px 0; width: 300px; display: flex; flex-direction: column; }
+label { font-size: 0.8rem; margin-bottom: 5px; color: #666; }
+input { 
+  background: var(--panel); border: 1px solid var(--border); 
+  padding: 12px; color: #fff; font-family: inherit; font-size: 1.1rem; outline: none;
 }
-.noise-layer {
-  position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E");
-  pointer-events: none; z-index: 9998;
-  animation: noise 0.5s steps(1) infinite;
-}
-
-/* ──────────────── MENU SCREEN ──────────────── */
-#screen-menu {
-  background: radial-gradient(ellipse at center, #1a0000 0%, #000 70%);
-  align-items: center; justify-content: center; gap: 30px;
-}
-
-.menu-logo {
-  text-align: center;
-}
-
-.menu-logo h1 {
-  font-family: 'Creepster', cursive;
-  font-size: clamp(2rem, 6vw, 4.5rem);
-  color: var(--red);
-  text-shadow: 0 0 30px #ff000088, 0 0 60px #ff000044;
-  line-height: 1.1;
-  letter-spacing: 3px;
-}
-
-.menu-logo .sub {
-  font-size: 0.85rem;
-  color: #888;
-  letter-spacing: 4px;
-  margin-top: 6px;
-}
-
-.menu-logo .stars {
-  font-size: 2rem;
-  margin: 10px 0;
-  animation: pulse-stars 2s ease-in-out infinite;
-}
-
-@keyframes pulse-stars {
-  0%,100% { text-shadow: 0 0 10px var(--yellow); }
-  50%      { text-shadow: 0 0 30px var(--yellow), 0 0 60px var(--orange); }
-}
-
-.menu-box {
-  background: var(--panel);
-  border: 1px solid #2a2a2a;
-  border-radius: 4px;
-  padding: 28px 36px;
-  width: min(420px, 90vw);
-  display: flex; flex-direction: column; gap: 16px;
-}
-
-.menu-box h2 { color: var(--red); font-size: 0.8rem; letter-spacing: 3px; text-transform: uppercase; }
-
-input[type="text"], input[type="password"] {
-  background: #0d0d0d;
-  border: 1px solid #333;
-  color: var(--green);
-  padding: 10px 14px;
-  font-family: inherit;
-  font-size: 1rem;
-  border-radius: 2px;
-  width: 100%;
-  outline: none;
-  transition: border-color 0.2s;
-}
-input:focus { border-color: var(--green); box-shadow: 0 0 8px #00ff4133; }
+input:focus { border-color: var(--green); box-shadow: 0 0 10px rgba(0,255,65,0.2); }
 
 .btn {
-  cursor: pointer; border: none; border-radius: 2px;
-  font-family: inherit; font-size: 0.9rem; letter-spacing: 2px;
-  text-transform: uppercase; padding: 12px 20px;
-  transition: all 0.15s;
+  background: var(--panel); border: 1px solid var(--border); color: #fff;
+  padding: 12px 24px; margin: 5px; font-family: inherit; font-size: 1rem;
+  cursor: pointer; transition: 0.2s; text-transform: uppercase;
 }
-.btn:active { transform: scale(0.97); }
+.btn:hover { background: #1a1a1a; border-color: #555; }
+.btn-primary { border-color: var(--green); color: var(--green); }
+.btn-primary:hover { background: var(--green); color: #000; }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: var(--red); color: #000; }
 
-.btn-red    { background: var(--red); color: #fff; }
-.btn-red:hover    { background: #ff3355; box-shadow: 0 0 15px #ff003388; }
-.btn-green  { background: #003300; color: var(--green); border: 1px solid var(--green); }
-.btn-green:hover  { background: #004400; box-shadow: 0 0 12px #00ff4144; }
-.btn-orange { background: #1a0800; color: var(--orange); border: 1px solid var(--orange); }
-.btn-orange:hover { background: #2a1200; box-shadow: 0 0 12px #ff880044; }
-.btn-dim    { background: #111; color: #666; border: 1px solid #333; }
-.btn-dim:hover    { background: #1a1a1a; color: #999; }
-.btn-blue   { background: #001133; color: var(--blue); border: 1px solid var(--blue); }
-.btn-blue:hover   { background: #001a44; box-shadow: 0 0 12px #4488ff44; }
-.btn-yellow { background: #1a1300; color: var(--yellow); border: 1px solid var(--yellow); }
-.btn-yellow:hover { background: #2a1e00; }
+.divider { width: 300px; height: 1px; background: var(--border); margin: 20px 0; }
 
-.sub-form { display: none; flex-direction: column; gap: 12px; border-top: 1px solid #222; padding-top: 16px; }
-.sub-form.open { display: flex; }
+/* ──────────────── LOBBY ──────────────── */
+.lobby-container { display: flex; gap: 40px; width: 80%; max-width: 900px; }
+.lobby-panel { flex: 1; background: var(--panel); border: 1px solid var(--border); padding: 20px; }
+.player-list { list-style: none; margin-top: 10px; }
+.player-item { padding: 8px; border-bottom: 1px solid var(--border); font-size: 0.9rem; display: flex; justify-content: space-between; }
+.role-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.role-btn { border: 1px solid var(--border); background: #000; padding: 15px; text-align: center; cursor: pointer; position: relative; }
+.role-btn.selected { border-color: var(--green); background: rgba(0,255,65,0.05); }
+.role-btn.taken { opacity: 0.3; cursor: not-allowed; border-style: dashed; }
+.role-icon { font-size: 1.5rem; margin-bottom: 5px; display: block; }
 
-.error-toast {
-  background: #1a0000; border: 1px solid var(--red);
-  color: var(--red); padding: 10px 14px; border-radius: 2px;
-  font-size: 0.8rem; display: none; text-align: center;
-}
-.error-toast.show { display: block; animation: fadeIn 0.2s; }
+/* ──────────────── GAME UI ──────────────── */
+#screen-game { background: #050505; color: #eee; }
 
-/* ──────────────── LOBBY SCREEN ──────────────── */
-#screen-lobby {
-  background: #050505;
-  padding: 20px;
-  gap: 20px;
-}
+/* HUD Top */
+.hud-top { position: absolute; top: 0; left: 0; width: 100%; padding: 20px; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+.stats-group { pointer-events: auto; }
+.bar-container { width: 250px; height: 12px; background: #111; border: 1px solid #333; margin-bottom: 10px; position: relative; }
+.bar-fill { height: 100%; width: 100%; transition: width 0.3s linear; }
+.bar-label { position: absolute; top: -18px; left: 0; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; }
 
-.lobby-header {
-  text-align: center;
-  padding: 10px;
-  border-bottom: 1px solid #1a1a1a;
-}
-.lobby-header h2 { color: var(--red); font-family: 'Creepster', cursive; font-size: 1.8rem; }
-.room-code-display {
-  font-size: 1.4rem; color: var(--yellow); letter-spacing: 6px;
-  margin-top: 4px;
-}
+#bar-power { background: var(--green); }
+#bar-music { background: var(--orange); }
 
-.lobby-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  flex: 1;
-}
-
-@media (max-width: 680px) { .lobby-grid { grid-template-columns: 1fr; } }
-
-.lobby-panel {
-  background: var(--panel);
-  border: 1px solid #1a1a1a;
-  border-radius: 4px;
-  padding: 18px;
-}
-.lobby-panel h3 { color: var(--orange); font-size: 0.75rem; letter-spacing: 3px; margin-bottom: 14px; }
-
-.player-list { display: flex; flex-direction: column; gap: 8px; }
-.player-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; background: #0d0d0d; border-radius: 2px;
-  border-left: 3px solid #333;
-}
-.player-item.has-role { border-left-color: var(--green); }
-.player-item .p-icon { font-size: 1.4rem; }
-.player-item .p-name { color: #ddd; font-size: 0.9rem; flex: 1; }
-.player-item .p-role { font-size: 0.75rem; color: #666; }
-
-.role-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
-}
-.role-btn {
-  display: flex; flex-direction: column; align-items: center;
-  gap: 6px; padding: 14px 8px; cursor: pointer;
-  border-radius: 4px; border: 2px solid transparent;
-  background: #0d0d0d; transition: all 0.15s;
-  font-family: inherit;
-}
-.role-btn:hover { transform: translateY(-1px); }
-.role-btn.selected { border-color: var(--green); background: #001a00; }
-.role-btn.taken { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
-.role-btn .r-icon { font-size: 2rem; }
-.role-btn .r-name { font-size: 0.7rem; letter-spacing: 2px; color: #bbb; }
-.role-btn.r-freddy { border-color: #333; }
-.role-btn.r-freddy:hover { border-color: var(--freddy); background: #1a0e08; }
-.role-btn.r-chica { border-color: #333; }
-.role-btn.r-chica:hover { border-color: var(--chica); background: #1a1500; }
-.role-btn.r-bonnie:hover { border-color: var(--bonnie); background: #100a18; }
-.role-btn.r-foxy:hover   { border-color: var(--foxy);   background: #1a0800; }
-.role-btn.r-guard:hover  { border-color: var(--guard);  background: #00081a; }
-
-.lobby-footer { text-align: center; padding: 10px; }
-.waiting-msg { color: #555; font-size: 0.8rem; margin-top: 10px; }
-#start-game-btn { display: none; }
-
-/* ──────────────── GAME SCREEN ──────────────── */
-#screen-game {
-  background: var(--dark);
-  padding: 0;
-  overflow: hidden;
-}
-
-/* Shared: top status bar */
-.status-bar {
-  display: flex; align-items: center; justify-content: space-between;
-  background: #050505; border-bottom: 1px solid #1a1a1a;
-  padding: 8px 14px; flex-shrink: 0; gap: 10px;
-  flex-wrap: wrap;
-}
-
-.stat-block { display: flex; flex-direction: column; gap: 3px; }
-.stat-label { font-size: 0.6rem; color: #555; letter-spacing: 2px; }
-.stat-value { font-size: 0.9rem; }
-
-.bar-wrapper { width: 120px; }
-.bar-track {
-  height: 10px; background: #111; border: 1px solid #2a2a2a; border-radius: 2px; overflow: hidden;
-}
-.bar-fill {
-  height: 100%; transition: width 0.5s linear;
-  border-radius: 2px;
-}
-#power-bar-fill   { background: linear-gradient(90deg, #ff0033, #ff8800, #00ff41); }
-#music-bar-fill   { background: linear-gradient(90deg, #ff0033, var(--yellow), #00bfff); }
-.bar-pct { font-size: 0.75rem; color: #888; margin-top: 2px; }
-
-.timer-display {
-  font-size: 1.1rem; color: var(--orange); letter-spacing: 2px;
-  text-shadow: 0 0 10px #ff880055;
-}
-
-/* ── NIGHT GUARD VIEW ── */
-#ng-view {
-  display: flex; flex-direction: column; flex: 1; overflow: hidden;
-}
-
-.ng-main { display: flex; flex: 1; overflow: hidden; }
-
-/* Camera monitor */
-.camera-panel {
-  flex: 1; display: flex; flex-direction: column;
-  background: #000d00; border-right: 1px solid #1a1a1a; position: relative;
-  overflow: hidden;
-}
-.camera-header {
-  background: #050505; border-bottom: 1px solid #0a2a0a;
-  padding: 6px 12px; display: flex; align-items: center; gap: 8px;
-}
-.cam-indicator { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
-.cam-indicator.live { animation: blink-red 1s ease infinite; }
-@keyframes blink-red { 0%,100%{opacity:1;} 50%{opacity:0.2;} }
-.camera-header span { font-size: 0.7rem; color: #00ff4199; letter-spacing: 3px; }
-
-.map-container {
-  flex: 1; display: flex; align-items: center; justify-content: center;
-  padding: 10px; position: relative;
-}
-#game-map { width: 100%; max-width: 400px; height: auto; }
-
-.map-overlay-text {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-  font-size: 3rem; color: rgba(255,0,0,0.8); font-family: 'Creepster', cursive;
-  text-align: center; text-shadow: 0 0 30px red;
-  display: none; pointer-events: none;
-  animation: flicker 0.1s steps(1) infinite;
-}
-@keyframes flicker { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
-
-/* Camera legend */
-.cam-legend {
-  display: flex; gap: 10px; padding: 6px 12px; border-top: 1px solid #0a2a0a;
-  background: #050505; flex-wrap: wrap;
-}
-.legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.65rem; color: #666; }
-.legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-/* Right panel: controls */
-.ng-right {
-  width: 240px; display: flex; flex-direction: column;
-  background: #050505; gap: 0;
-}
-
-.ng-section {
-  padding: 14px; border-bottom: 1px solid #111;
-}
-.ng-section h4 { font-size: 0.65rem; color: #444; letter-spacing: 3px; margin-bottom: 10px; }
-
-/* Door button */
-.door-btn-wrap { text-align: center; }
-#door-btn {
-  width: 100%; padding: 16px; font-size: 1rem;
-  letter-spacing: 3px; transition: all 0.15s;
-}
-#door-btn.locked {
-  background: #1a0000; color: var(--red); border: 2px solid var(--red);
-  box-shadow: 0 0 20px #ff003344;
-  animation: pulse-red 1.5s ease infinite;
-}
-#door-btn.unlocked {
-  background: #003300; color: var(--green); border: 2px solid var(--green);
-}
-@keyframes pulse-red { 0%,100%{box-shadow: 0 0 20px #ff003344;} 50%{box-shadow:0 0 35px #ff003388;} }
-.door-hint { font-size: 0.65rem; color: #444; text-align: center; margin-top: 6px; }
-
-/* Music box */
-#crank-btn {
-  width: 100%; padding: 12px; font-size: 0.85rem; letter-spacing: 2px;
-  cursor: pointer; transition: all 0.15s;
-}
-#crank-btn:active { transform: scale(0.95) rotate(-5deg); }
-
-/* BRB button */
-#brb-btn { width: 100%; padding: 10px; font-size: 0.8rem; letter-spacing: 2px; }
-
-/* Power restore (hidden until power out) */
-#power-restore-panel {
-  display: none; flex-direction: column; align-items: center; gap: 10px;
-  position: absolute; inset: 0; background: rgba(0,0,0,0.92);
-  justify-content: center; z-index: 50;
-}
-#power-restore-panel.show { display: flex; }
-.power-out-text {
-  font-family: 'Creepster', cursive; font-size: 2.5rem; color: var(--red);
-  text-shadow: 0 0 40px var(--red); animation: flicker 0.1s steps(1) infinite;
-}
-.power-btn-wrap { position: relative; display: inline-block; }
-#power-hold-btn {
-  padding: 20px 40px; font-size: 1rem; letter-spacing: 3px;
-  cursor: pointer; user-select: none;
-  background: #1a0000; color: var(--orange);
-  border: 2px solid var(--orange); border-radius: 4px;
-  font-family: inherit;
-}
-.power-progress {
-  position: absolute; bottom: 0; left: 0;
-  height: 4px; width: 0%; background: var(--orange);
-  transition: width 0.1s linear; border-radius: 0 0 4px 4px;
-}
-.power-instructions { font-size: 0.75rem; color: #666; text-align: center; max-width: 280px; }
+.timer-box { font-size: 2.5rem; font-weight: bold; font-family: 'Share Tech Mono'; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
 
 /* Notifications */
-.notif-panel { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column-reverse; gap: 6px; }
-.notif-item {
-  font-size: 0.72rem; padding: 6px 10px;
-  background: #0d0d0d; border-left: 2px solid #333;
-  border-radius: 1px; color: #888; line-height: 1.4;
-  animation: slideIn 0.2s ease;
+#notif-log { position: absolute; bottom: 20px; right: 20px; width: 300px; display: flex; flex-direction: column-reverse; gap: 5px; pointer-events: none; }
+.notif { background: rgba(0,0,0,0.8); border-left: 3px solid var(--green); padding: 8px 12px; font-size: 0.85rem; animation: slideIn 0.3s ease-out; }
+@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+/* Map & Room */
+.game-layout { display: flex; width: 100%; height: 100%; padding: 80px 40px 140px 40px; gap: 20px; }
+.room-view { flex: 2; border: 2px solid #222; background: #080808; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+.room-header { padding: 15px; border-bottom: 1px solid #222; background: #111; display: flex; justify-content: space-between; align-items: center; }
+.room-name { font-size: 1.2rem; font-weight: bold; color: var(--green); text-transform: uppercase; }
+
+.room-display { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
+.room-img-placeholder { font-size: 5rem; opacity: 0.1; }
+
+.presence-list { position: absolute; bottom: 20px; left: 20px; display: flex; gap: 10px; }
+.p-badge { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+
+/* Minimap */
+.map-view { flex: 1; background: #0a0a0a; border: 1px solid #222; padding: 20px; display: flex; flex-direction: column; }
+.map-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 5px; flex: 1; position: relative; }
+.map-node { 
+  background: #111; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; 
+  text-align: center; padding: 5px; color: #444; transition: 0.2s; cursor: pointer;
 }
-.notif-item.danger { border-left-color: var(--red); color: #ffaaaa; background: #1a0000; }
-.notif-item.warning { border-left-color: var(--orange); color: #ffcc88; }
-.notif-item.info    { border-left-color: var(--blue);   color: #aaccff; }
+.map-node.adjacent { border-color: var(--green); color: #888; }
+.map-node.adjacent:hover { background: #1a1a1a; color: #fff; }
+.map-node.current { background: var(--green) !important; color: #000 !important; font-weight: bold; }
 
-@keyframes slideIn { from{opacity:0;transform:translateX(8px);} to{opacity:1;transform:translateX(0);} }
-@keyframes fadeIn  { from{opacity:0;} to{opacity:1;} }
+/* Guard Specific */
+.guard-controls { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
+.ctrl-btn { width: 120px; height: 60px; background: #111; border: 2px solid #333; color: #fff; font-family: inherit; cursor: pointer; }
+.ctrl-btn:active { background: #222; }
+.ctrl-btn.active { background: var(--red); border-color: var(--red); color: #000; box-shadow: 0 0 15px var(--red); }
 
-/* ── ANIMATRONIC VIEW ── */
-#anim-view {
-  display: flex; flex-direction: column; flex: 1; overflow: hidden;
+/* Animatronic Specific */
+#step-alert {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: var(--red); color: #fff; padding: 20px 40px; font-size: 2rem;
+  font-family: 'Creepster'; display: none; z-index: 100; pointer-events: none;
 }
+.move-btn { position: absolute; z-index: 101; display: none; }
 
-.anim-main { display: flex; flex: 1; overflow: hidden; gap: 0; }
-
-.anim-left {
-  flex: 1; display: flex; flex-direction: column; padding: 20px; gap: 16px;
-  border-right: 1px solid #111;
+/* ──────────────── OVERLAYS ──────────────── */
+.overlay { 
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+  background: rgba(0,0,0,0.9); z-index: 1000; display: none;
+  flex-direction: column; align-items: center; justify-content: center;
 }
-
-.char-header {
-  display: flex; align-items: center; gap: 16px; padding: 14px;
-  border-radius: 4px; border: 1px solid #1a1a1a; background: #0a0a0a;
-}
-.char-icon { font-size: 3.5rem; line-height: 1; }
-.char-info h2 { font-size: 1.2rem; letter-spacing: 2px; }
-.char-info .char-room { font-size: 0.75rem; color: #888; margin-top: 4px; }
-.char-info .char-room span { color: var(--green); }
-
-/* Step alert */
-.step-section { text-align: center; }
-.step-countdown {
-  font-size: 0.7rem; color: #555; letter-spacing: 3px;
-}
-.step-countdown span { color: var(--orange); font-size: 1.1rem; }
-.step-alert {
-  display: none; padding: 12px; text-align: center;
-  background: #1a0800; border: 2px solid var(--orange);
-  border-radius: 4px; color: var(--orange);
-  font-family: 'Creepster', cursive; font-size: 1.8rem;
-  letter-spacing: 4px; animation: pulse-step 0.5s ease infinite;
-}
-.step-alert.show { display: block; }
-@keyframes pulse-step { 0%,100%{transform:scale(1);} 50%{transform:scale(1.03);} }
-
-/* Movement grid */
-.move-section h3 { font-size: 0.65rem; color: #444; letter-spacing: 3px; margin-bottom: 10px; }
-.move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.move-btn {
-  padding: 12px 8px; font-size: 0.7rem; letter-spacing: 1px;
-  cursor: pointer; border-radius: 2px;
-  text-align: center; transition: all 0.15s;
-  background: #0d0d0d; color: #999; border: 1px solid #222;
-  font-family: inherit;
-}
-.move-btn:hover:not(:disabled) { background: #1a1a1a; color: #ddd; border-color: #444; }
-.move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.no-move-msg { font-size: 0.75rem; color: #555; text-align: center; padding: 20px; }
-
-/* Foxy rush button */
-#foxy-rush-btn {
-  display: none; width: 100%; padding: 14px;
-  font-family: 'Creepster', cursive; font-size: 1.4rem; letter-spacing: 3px;
-  background: #1a0300; color: var(--foxy); border: 2px solid var(--foxy);
-  cursor: pointer; border-radius: 4px;
-  animation: pulse-foxy 0.8s ease infinite;
-}
-#foxy-rush-btn.show { display: block; }
-@keyframes pulse-foxy {
-  0%,100%{box-shadow:0 0 15px #ff450044;} 50%{box-shadow:0 0 35px #ff450088;}
-}
-
-.anim-right {
-  width: 220px; display: flex; flex-direction: column;
-  background: #050505;
-}
-.anim-right h4 { font-size: 0.65rem; color: #333; letter-spacing: 3px; padding: 10px 14px; border-bottom: 1px solid #111; }
-
-/* ──────────────── BRB SCREEN ──────────────── */
-#screen-brb {
-  background: radial-gradient(ellipse at center, #0a0000 0%, #000 80%);
-  align-items: center; justify-content: center; gap: 20px; padding: 20px;
-}
-
-.brb-container {
-  background: var(--panel); border: 1px solid #2a1a1a;
-  border-radius: 4px; padding: 30px; width: min(480px, 95vw);
-  display: flex; flex-direction: column; gap: 18px;
-}
-
-.brb-title {
-  font-family: 'Creepster', cursive; font-size: 2rem; color: var(--red);
-  text-align: center; text-shadow: 0 0 20px var(--red);
-}
-
-.brb-desc { font-size: 0.8rem; color: #666; text-align: center; line-height: 1.6; }
-
-.brb-section { border: 1px solid #1a1a1a; border-radius: 2px; padding: 16px; }
-.brb-section h3 { font-size: 0.7rem; color: #555; letter-spacing: 3px; margin-bottom: 12px; }
-
-.music-crank-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-#brb-music-bar-fill { background: linear-gradient(90deg, #ff0033, #ffdd00, #00ccff); }
-#brb-crank-btn {
-  padding: 12px 28px; font-size: 1rem; letter-spacing: 2px;
-  cursor: pointer; user-select: none; transition: all 0.1s;
-  background: #001a10; color: #00ff88; border: 2px solid #00ff88;
-  border-radius: 4px; font-family: inherit;
-}
-#brb-crank-btn:active { transform: rotate(-10deg) scale(0.93); }
-.crank-tip { font-size: 0.65rem; color: #444; text-align: center; }
-
-.return-form { display: flex; flex-direction: column; gap: 10px; }
-.return-form label { font-size: 0.7rem; color: #555; letter-spacing: 2px; }
+#screen-brb { background: #000 url('https://www.transparenttextures.com/patterns/carbon-fibre.png'); }
+#brb-text { font-size: 1.5rem; color: #444; margin-bottom: 20px; text-align: center; }
+#brb-power-btn { width: 100px; height: 100px; border-radius: 50%; border: 4px solid #222; background: #111; cursor: pointer; position: relative; }
+#brb-power-fill { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: var(--red); border-radius: 50%; transition: height 0.1s; }
 
 /* ──────────────── GAME OVER ──────────────── */
-#screen-gameover {
-  background: #000;
-  align-items: center; justify-content: center; gap: 24px;
-  padding: 20px;
-}
+.go-title { font-size: 5rem; font-family: 'Creepster'; margin-bottom: 10px; }
+.nightguard-wins { color: var(--green); text-shadow: 0 0 20px var(--green); }
+.animatronics-win { color: var(--red); text-shadow: 0 0 20px var(--red); }
+#go-reason { font-size: 1.2rem; color: #888; margin-bottom: 30px; }
+#go-icon { font-size: 4rem; margin-bottom: 20px; }
 
-.go-title {
-  font-family: 'Creepster', cursive; font-size: clamp(2.5rem, 8vw, 5rem);
-  text-align: center; letter-spacing: 4px;
-}
-.go-title.nightguard-wins { color: var(--yellow); text-shadow: 0 0 40px var(--yellow); }
-.go-title.animatronics-win { color: var(--red); text-shadow: 0 0 40px var(--red); animation: flicker 0.08s steps(1) infinite; }
+/* ──────────────── UTILS ──────────────── */
+.hidden { display: none !important; }
+.flash-red { animation: flashRed 0.5s infinite; }
+@keyframes flashRed { 0% { background: transparent; } 50% { background: rgba(255,0,0,0.2); } 100% { background: transparent; } }
 
-.go-reason {
-  font-size: 1rem; color: #aaa; text-align: center; max-width: 500px; line-height: 1.6;
-}
-.go-icon { font-size: 5rem; text-align: center; }
-
-/* ──────────────── WARNING FLASH ──────────────── */
-.danger-flash {
-  position: fixed; inset: 0; pointer-events: none; z-index: 9990;
-  background: rgba(255,0,0,0);
-  transition: background 0.1s;
-}
-.danger-flash.flash { animation: danger-pulse 2s ease-out; }
-@keyframes danger-pulse {
-  0%   { background: rgba(255,0,0,0.3); }
-  100% { background: rgba(255,0,0,0); }
-}
-
-/* ──────────────── MISC ──────────────── */
-.sep { border: none; border-top: 1px solid #111; margin: 4px 0; }
-.btn-row { display: flex; gap: 10px; }
-.btn-row .btn { flex: 1; }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #050505; }
-::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
-
-/* Door lock: warning overlay on map when near */
-.door-danger { display: none; }
-.door-danger.show {
-  display: block; position: absolute; top: 6px; right: 6px;
-  background: #1a0000; border: 1px solid var(--red); color: var(--red);
-  font-size: 0.65rem; padding: 4px 8px; border-radius: 2px;
-  letter-spacing: 2px; animation: blink-red 0.8s ease infinite;
-}
-
-.blocked-msg {
-  display: none; text-align: center; padding: 8px;
-  background: #1a0000; color: var(--red); border: 1px solid var(--red);
-  font-size: 0.75rem; border-radius: 2px; margin-top: 6px;
-}
-.blocked-msg.show { display: block; animation: fadeIn 0.2s; }
 </style>
 </head>
 <body>
-<div class="noise-layer"></div>
-<div class="danger-flash" id="danger-flash"></div>
 
-<!-- ══════════════ SCREEN: MENU ══════════════ -->
-<div id="screen-menu" class="screen active">
-  <div class="menu-logo">
-    <div class="stars">★ ★ ★ ★ ★</div>
-    <h1>FIVE NIGHTS<br>AT FREDDY'S</h1>
-    <div class="sub">— MULTIPLAYER EDITION —</div>
-  </div>
-
-  <div class="menu-box">
-    <h2>Freddy Fazbear's Pizza</h2>
-    <input type="text" id="player-name" placeholder="Enter your name..." maxlength="20" autocomplete="off"/>
-    <div id="menu-error" class="error-toast"></div>
-
-    <div class="btn-row">
-      <button class="btn btn-red" onclick="toggleForm('host')">🏠 HOST GAME</button>
-      <button class="btn btn-dim" onclick="toggleForm('join')">🚪 JOIN GAME</button>
+  <div id="screen-main" class="screen active">
+    <h1>FNAF ONLINE</h1>
+    
+    <div class="input-group">
+      <label>YOUR NAME</label>
+      <input type="text" id="player-name" placeholder="Jeremy Fitzgerald" maxlength="15">
     </div>
 
-    <div class="sub-form" id="host-form">
-      <label style="font-size:.7rem;color:#555;letter-spacing:2px;">CREATE ROOM CODE</label>
-      <input type="text" id="host-code" placeholder="e.g. FNAF1993" maxlength="10" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;"/>
-      <button class="btn btn-green" onclick="createRoom()">CREATE ROOM</button>
+    <div class="divider"></div>
+
+    <div class="input-group">
+      <label>ROOM CODE</label>
+      <input type="text" id="host-code" placeholder="CUST0M">
+      <button class="btn btn-primary" onclick="createRoom()" style="margin-top:10px">Create Private Room</button>
     </div>
 
-    <div class="sub-form" id="join-form">
-      <label style="font-size:.7rem;color:#555;letter-spacing:2px;">ENTER ROOM CODE</label>
-      <input type="text" id="join-code" placeholder="Room code..." maxlength="10" autocomplete="off" style="text-transform:uppercase;letter-spacing:4px;"/>
-      <button class="btn btn-orange" onclick="joinRoom()">JOIN ROOM</button>
+    <p style="margin: 10px 0; font-size: 0.8rem; color: #444;">— OR —</p>
+
+    <div class="input-group">
+      <input type="text" id="join-code" placeholder="JOIN CODE">
+      <button class="btn" onclick="joinRoom()" style="margin-top:10px">Join Room</button>
     </div>
   </div>
 
-  <div style="font-size:0.65rem;color:#333;text-align:center;padding-bottom:10px;">
-    "It's me..." &nbsp;|&nbsp; Freddy Fazbear's Pizza &nbsp;|&nbsp; 1987
-  </div>
-</div>
+  <div id="screen-lobby" class="screen">
+    <h2>PRE-GAME LOBBY</h2>
+    <p id="display-room-code" style="color:var(--green); letter-spacing: 2px; margin-bottom: 20px;"></p>
 
-<!-- ══════════════ SCREEN: LOBBY ══════════════ -->
-<div id="screen-lobby" class="screen">
-  <div class="lobby-header">
-    <h2>🎪 Freddy Fazbear's Pizza — Lobby</h2>
-    <div>Room Code: <span class="room-code-display" id="lobby-code-display">----</span></div>
-    <div style="font-size:0.7rem;color:#555;margin-top:4px;">Share this code with friends to join!</div>
-  </div>
-
-  <div class="lobby-grid" style="flex:1;overflow:auto;padding:0 20px 20px;">
-    <div class="lobby-panel">
-      <h3>PLAYERS IN ROOM</h3>
-      <div class="player-list" id="player-list"></div>
-    </div>
-
-    <div class="lobby-panel">
-      <h3>CHOOSE YOUR ROLE</h3>
-      <div class="role-grid">
-        <button class="role-btn r-freddy" onclick="selectRole('freddy')" id="role-freddy">
-          <span class="r-icon">🐻</span>
-          <span class="r-name" style="color:var(--freddy)">FREDDY</span>
-        </button>
-        <button class="role-btn r-chica" onclick="selectRole('chica')" id="role-chica">
-          <span class="r-icon">🐥</span>
-          <span class="r-name" style="color:var(--chica)">CHICA</span>
-        </button>
-        <button class="role-btn r-bonnie" onclick="selectRole('bonnie')" id="role-bonnie">
-          <span class="r-icon">🐰</span>
-          <span class="r-name" style="color:var(--bonnie)">BONNIE</span>
-        </button>
-        <button class="role-btn r-foxy" onclick="selectRole('foxy')" id="role-foxy">
-          <span class="r-icon">🦊</span>
-          <span class="r-name" style="color:var(--foxy)">FOXY</span>
-        </button>
-        <button class="role-btn r-guard" onclick="selectRole('nightguard')" id="role-nightguard" style="grid-column:1/-1;">
-          <span class="r-icon">👮</span>
-          <span class="r-name" style="color:var(--guard)">NIGHT GUARD</span>
-        </button>
-      </div>
-      <div id="lobby-error" class="error-toast" style="margin-top:10px;"></div>
-    </div>
-  </div>
-
-  <div class="lobby-footer">
-    <button class="btn btn-red" id="start-game-btn" onclick="startGame()">▶ START GAME</button>
-    <div class="waiting-msg" id="waiting-msg">Waiting for host to start...</div>
-    <div class="waiting-msg" id="waiting-roles">All players must select a role, and at least one must be Night Guard.</div>
-  </div>
-</div>
-
-<!-- ══════════════ SCREEN: GAME ══════════════ -->
-<div id="screen-game" class="screen">
-
-  <!-- Shared status bar -->
-  <div class="status-bar" id="status-bar">
-    <div class="stat-block">
-      <div class="stat-label">POWER</div>
-      <div class="bar-wrapper">
-        <div class="bar-track"><div class="bar-fill" id="power-bar-fill" style="width:100%"></div></div>
-        <div class="bar-pct"><span id="power-pct">100</span>%</div>
-      </div>
-    </div>
-    <div class="stat-block" style="text-align:center;">
-      <div class="stat-label">6AM</div>
-      <div class="timer-display" id="game-timer">10:00</div>
-    </div>
-    <div class="stat-block">
-      <div class="stat-label">MUSIC BOX</div>
-      <div class="bar-wrapper">
-        <div class="bar-track"><div class="bar-fill" id="music-bar-fill" style="width:100%"></div></div>
-        <div class="bar-pct"><span id="music-pct">100</span>%</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- NIGHT GUARD VIEW -->
-  <div id="ng-view" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
-    <div class="ng-main" style="flex:1;overflow:hidden;">
-
-      <!-- Camera / Map Panel -->
-      <div class="camera-panel">
-        <div class="camera-header">
-          <div class="cam-indicator live" id="cam-led"></div>
-          <span>CAM 01 — SECURITY FEED — LIVE</span>
-          <div class="door-danger" id="door-danger">⚠ NEAR OFFICE</div>
-        </div>
-        <div class="map-container">
-          <!-- SVG MAP (from user's floor plan) -->
-          <svg id="game-map" viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="scanlines" x="0" y="0" width="400" height="4" patternUnits="userSpaceOnUse">
-                <rect width="400" height="2" fill="#00ff0806"/>
-              </pattern>
-              <filter id="glow">
-                <feGaussianBlur stdDeviation="2" result="blur"/>
-                <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-            <!-- BG -->
-            <rect width="400" height="520" fill="#000d00"/>
-            <rect width="400" height="520" fill="url(#scanlines)" pointer-events="none"/>
-
-            <!-- Outer boundary (property) -->
-            <rect x="6" y="6" width="388" height="508" fill="none" stroke="#00ff4122" stroke-width="1" stroke-dasharray="6,4"/>
-
-            <!-- UPPER BUILDING (with top-left notch) -->
-            <path d="M 103 16 H 356 V 222 H 56 V 66 H 103 Z" fill="#000d00" stroke="#00ff41" stroke-width="2" filter="url(#glow)"/>
-            <!-- entrance corridor indicator -->
-            <rect x="56" y="16" width="47" height="50" fill="#050f05" stroke="#00ff4155" stroke-width="1" stroke-dasharray="3,2"/>
-            <text x="79" y="47" text-anchor="middle" fill="#00ff4155" font-size="7" font-family="Courier New">ENTRY</text>
-
-            <!-- LOWER SECTION -->
-            <rect x="56" y="237" width="300" height="185" fill="#000d00" stroke="#00ff41" stroke-width="2" filter="url(#glow)"/>
-
-            <!-- FRONT AREA label -->
-            <text x="190" y="43" text-anchor="middle" fill="#00ff4199" font-size="11" font-family="Courier New" letter-spacing="2">FRONT AREA</text>
-
-            <!-- PORCH -->
-            <rect x="210" y="60" width="70" height="55" fill="#002200" stroke="#00ff41" stroke-width="1.5"/>
-            <text x="245" y="90" text-anchor="middle" fill="#00ff41" font-size="9" font-family="Courier New">PORCH</text>
-
-            <!-- LIVING ROOM -->
-            <rect x="104" y="104" width="170" height="74" fill="#002200" stroke="#00ff41" stroke-width="1.5"/>
-            <text x="189" y="145" text-anchor="middle" fill="#00ff41" font-size="9" font-family="Courier New">LIVING ROOM</text>
-
-            <!-- BEDROOM -->
-            <rect x="272" y="104" width="62" height="74" fill="#002200" stroke="#00ff41" stroke-width="1.5"/>
-            <text x="303" y="141" text-anchor="middle" fill="#00ff41" font-size="8" font-family="Courier New">BEDROOM</text>
-
-            <!-- FOXY'S COVE (narrow right strip) -->
-            <rect x="332" y="104" width="26" height="84" fill="#140000" stroke="#ff4400" stroke-width="1.5"/>
-            <text x="345" y="130" text-anchor="middle" fill="#ff4400" font-size="6" font-family="Courier New">FOXY</text>
-            <text x="345" y="142" text-anchor="middle" fill="#ff4400" font-size="6" font-family="Courier New">'S</text>
-            <text x="345" y="154" text-anchor="middle" fill="#ff4400" font-size="6" font-family="Courier New">COVE</text>
-
-            <!-- KITCHEN -->
-            <rect x="104" y="176" width="124" height="44" fill="#002200" stroke="#00ff41" stroke-width="1.5"/>
-            <text x="166" y="201" text-anchor="middle" fill="#00ff41" font-size="9" font-family="Courier New">KITCHEN</text>
-
-            <!-- /restricted/ (upper) -->
-            <rect x="228" y="160" width="76" height="44" fill="#120800" stroke="#ff8800" stroke-width="1.5"/>
-            <text x="266" y="185" text-anchor="middle" fill="#ff8800" font-size="7" font-family="Courier New">/restricted/</text>
-
-            <!-- /restricted/ (lower) -->
-            <rect x="84" y="249" width="96" height="48" fill="#120800" stroke="#ff8800" stroke-width="1.5"/>
-            <text x="132" y="277" text-anchor="middle" fill="#ff8800" font-size="7" font-family="Courier New">/restricted/</text>
-
-            <!-- OFFICE -->
-            <rect x="214" y="249" width="98" height="62" fill="#000022" stroke="#4455ff" stroke-width="2.5"/>
-            <text x="263" y="283" text-anchor="middle" fill="#6677ff" font-size="10" font-family="Courier New" font-weight="bold">OFFICE</text>
-            <text x="263" y="298" text-anchor="middle" fill="#4444aa" font-size="6" font-family="Courier New">[YOU ARE HERE]</text>
-
-            <!-- CHICKEN COOP -->
-            <rect x="103" y="355" width="164" height="47" rx="20" fill="#001100" stroke="#00ff41" stroke-width="1.5"/>
-            <text x="185" y="382" text-anchor="middle" fill="#00ff41" font-size="9" font-family="Courier New">CHICKEN COOP</text>
-
-            <!-- Animatronic dots layer (populated by JS) -->
-            <g id="anim-dots"></g>
-
-            <!-- Door lock overlay on office -->
-            <g id="door-lock-indicator" style="display:none;">
-              <rect x="214" y="237" width="98" height="14" fill="#1a0000" opacity="0.9"/>
-              <text x="263" y="248" text-anchor="middle" fill="#ff0033" font-size="8" font-family="Courier New">🔒 DOOR LOCKED</text>
-            </g>
-          </svg>
-        </div>
-        <!-- Legend -->
-        <div class="cam-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--freddy)"></div>Freddy</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--chica)"></div>Chica</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--bonnie)"></div>Bonnie</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--foxy)"></div>Foxy</div>
-        </div>
+    <div class="lobby-container">
+      <div class="lobby-panel">
+        <h3>Players</h3>
+        <ul id="lobby-player-list" class="player-list"></ul>
       </div>
 
-      <!-- Right controls panel -->
-      <div class="ng-right">
-        <div class="ng-section">
-          <h4>SECURITY DOOR</h4>
-          <div class="door-btn-wrap">
-            <button id="door-btn" class="btn unlocked" onclick="toggleDoor()">🔓 DOOR OPEN</button>
-            <div class="door-hint">Press [SPACE] to toggle</div>
+      <div class="lobby-panel">
+        <h3>Choose Your Role</h3>
+        <div class="role-grid">
+          <div class="role-btn" id="role-freddy" onclick="selectRole('freddy')">
+            <span class="role-icon">🐻</span> Freddy
+          </div>
+          <div class="role-btn" id="role-chica" onclick="selectRole('chica')">
+            <span class="role-icon">🐥</span> Chica
+          </div>
+          <div class="role-btn" id="role-bonnie" onclick="selectRole('bonnie')">
+            <span class="role-icon">🐰</span> Bonnie
+          </div>
+          <div class="role-btn" id="role-foxy" onclick="selectRole('foxy')">
+            <span class="role-icon">🦊</span> Foxy
+          </div>
+          <div class="role-btn" id="role-nightguard" onclick="selectRole('nightguard')" style="grid-column: span 2;">
+            <span class="role-icon">👮</span> Night Guard
           </div>
         </div>
-        <div class="ng-section">
-          <h4>MUSIC BOX</h4>
-          <div class="bar-wrapper" style="width:100%;margin-bottom:8px;">
-            <div class="bar-track"><div class="bar-fill" id="ng-music-bar-fill" style="width:100%"></div></div>
+        <button class="btn btn-primary" id="start-btn" onclick="startGame()" style="width: 100%; margin-top: 20px;">Start Game</button>
+      </div>
+    </div>
+    <button class="btn btn-danger" onclick="location.reload()" style="margin-top: 20px;">Leave Room</button>
+  </div>
+
+  <div id="screen-game" class="screen">
+    
+    <div id="step-alert">MOVE NOW!</div>
+
+    <div class="hud-top">
+      <div class="stats-group">
+        <div class="bar-container">
+          <span class="bar-label">Power Left</span>
+          <div id="bar-power" class="bar-fill"></div>
+        </div>
+        <div class="bar-container" id="music-container">
+          <span class="bar-label">Music Box</span>
+          <div id="bar-music" class="bar-fill"></div>
+        </div>
+      </div>
+      <div class="timer-box" id="game-timer">12:00</div>
+    </div>
+
+    <div class="game-layout">
+      <div class="room-view">
+        <div class="room-header">
+          <div class="room-name" id="current-room-name">Office</div>
+          <div id="room-status" style="font-size: 0.7rem; color: #444;">FEED LIVE</div>
+        </div>
+        <div class="room-display" id="room-display">
+          <div class="room-img-placeholder" id="room-icon">📁</div>
+          <div class="presence-list" id="room-presence"></div>
+        </div>
+      </div>
+
+      <div class="map-view">
+        <h3 style="font-size: 0.8rem; color: #444; margin-bottom: 10px; text-transform: uppercase;">Facility Map</h3>
+        <div class="map-grid" id="map-grid">
           </div>
-          <button id="crank-btn" class="btn btn-blue" onclick="windMusicBox()">🎵 CRANK MUSIC BOX</button>
-          <div style="font-size:0.6rem;color:#333;margin-top:4px;">Click to wind (+3 sec)</div>
-        </div>
-        <div class="ng-section">
-          <h4>ACTIONS</h4>
-          <button id="brb-btn" class="btn btn-dim" onclick="goBRB()">👤 BRB (LEAVE OFFICE)</button>
-          <div style="font-size:0.6rem;color:#333;margin-top:4px;">Game continues while away!</div>
-        </div>
-        <div class="ng-section" style="font-size:0.65rem;color:#333;line-height:1.8;flex:1;">
-          <h4>CONTROLS</h4>
-          [SPACE] = Lock/Unlock Door<br>
-          Click CRANK = Wind music box<br>
-          BRB = Leave office (type 'admin' to return)
-        </div>
-
-        <!-- Notifications for nightguard -->
-        <div class="ng-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;padding-bottom:0;">
-          <h4>ALERTS</h4>
-          <div class="notif-panel" id="ng-notif-panel"></div>
-        </div>
       </div>
     </div>
 
-    <!-- Power restore overlay -->
-    <div id="power-restore-panel">
-      <div class="power-out-text">⚡ POWER OUT ⚡</div>
-      <div style="font-size:0.85rem;color:#888;text-align:center;">
-        Animatronics are in free roam!<br>Hold the button below to restore emergency power.
-      </div>
-      <div class="power-btn-wrap">
-        <button id="power-hold-btn" onmousedown="startPowerHold()" onmouseup="stopPowerHold()"
-                ontouchstart="startPowerHold()" ontouchend="stopPowerHold()">
-          ⚡ HOLD TO RESTORE POWER ⚡
-        </button>
-        <div class="power-progress" id="power-progress"></div>
-      </div>
-      <div class="power-instructions">Hold for 3 seconds to restore emergency power (25%)</div>
+    <div class="guard-controls hidden" id="guard-ui">
+      <button class="ctrl-btn" id="door-btn" onclick="toggleDoor()">DOOR (SPACE)</button>
+      <button class="ctrl-btn" id="music-btn" onclick="windMusic()">CRANK BOX</button>
+      <button class="ctrl-btn btn-danger" onclick="goBrb()">LEAVE OFFICE</button>
     </div>
+
+    <div id="notif-log"></div>
   </div>
 
-  <!-- ANIMATRONIC VIEW -->
-  <div id="anim-view" style="display:none;flex:1;overflow:hidden;">
-    <div class="anim-main" style="flex:1;overflow:hidden;">
-
-      <div class="anim-left">
-        <!-- Character header -->
-        <div class="char-header" id="char-header">
-          <div class="char-icon" id="char-icon">🐻</div>
-          <div class="char-info">
-            <h2 id="char-name" style="color:var(--freddy)">FREDDY</h2>
-            <div class="char-room">LOCATION: <span id="char-room-display">FRONT AREA</span></div>
-          </div>
-        </div>
-
-        <!-- Step timer -->
-        <div class="step-section">
-          <div class="step-countdown">NEXT STEP IN: <span id="step-timer-display">10</span>s</div>
-          <div class="step-alert" id="step-alert">⚠ STEP! MOVE NOW! ⚠</div>
-        </div>
-
-        <!-- Movement options -->
-        <div class="move-section">
-          <h3>MOVE TO:</h3>
-          <div class="move-grid" id="move-grid"></div>
-          <div class="no-move-msg" id="no-move-msg" style="display:none;">Wait for the STEP to move...</div>
-          <div class="blocked-msg" id="blocked-msg">🚪 DOOR IS LOCKED — Cannot enter office!</div>
-        </div>
-
-        <!-- Foxy rush button -->
-        <button id="foxy-rush-btn" onclick="foxyRush()">
-          🦊 RUN TO OFFICE! 🦊
-        </button>
+  <div id="screen-brb" class="overlay">
+    <div id="brb-text">YOU ARE AWAY FROM YOUR DESK<br><span style="font-size: 0.8rem; color: var(--red);">YOU ARE VULNERABLE</span></div>
+    
+    <div id="power-restore-ui" class="hidden" style="text-align:center;">
+      <p style="color: var(--red); margin-bottom: 20px;">MAIN POWER OFFLINE</p>
+      <div id="brb-power-btn" onmousedown="startRestore()" onmouseup="stopRestore()" onmouseleave="stopRestore()">
+        <div id="brb-power-fill"></div>
       </div>
-
-      <!-- Right: notifications -->
-      <div class="anim-right">
-        <h4>NOTIFICATIONS</h4>
-        <div class="notif-panel" id="anim-notif-panel"></div>
-      </div>
+      <p style="margin-top: 15px; font-size: 0.7rem;">HOLD TO RESTORE EMERGENCY POWER</p>
     </div>
+
+    <button class="btn btn-primary" id="return-btn" onclick="returnToOffice()" style="margin-top: 30px;">RETURN TO COMPUTER (ENTER)</button>
   </div>
-</div>
 
-<!-- ══════════════ SCREEN: BRB ══════════════ -->
-<div id="screen-brb" class="screen">
-  <div class="brb-container">
-    <div class="brb-title">👤 YOU LEFT THE OFFICE</div>
-    <div class="brb-desc">
-      The game is still running! Animatronics have been notified.<br>
-      Wind the music box and return as soon as possible!
-    </div>
-
-    <!-- Music box crank in BRB -->
-    <div class="brb-section">
-      <h3>MUSIC BOX (WIND IT!)</h3>
-      <div class="music-crank-area">
-        <div class="bar-wrapper" style="width:100%;">
-          <div class="bar-track"><div class="bar-fill" id="brb-music-bar-fill" style="width:100%"></div></div>
-          <div class="bar-pct"><span id="brb-music-pct">100</span>%</div>
-        </div>
-        <button id="brb-crank-btn" onclick="windMusicBox()">🎵 CRANK</button>
-        <div class="crank-tip">Each crank = +3 seconds of wind. Keep it going!</div>
-      </div>
-    </div>
-
-    <!-- Return to office -->
-    <div class="brb-section">
-      <h3>RETURN TO OFFICE</h3>
-      <div class="return-form">
-        <label>ADMIN PASSWORD:</label>
-        <input type="password" id="brb-password" placeholder="Type 'admin' to return..." autocomplete="off"/>
-        <div id="brb-error" class="error-toast"></div>
-        <button class="btn btn-red" onclick="returnToOffice()">🖥️ LOG BACK IN</button>
-      </div>
-    </div>
-
-    <!-- BRB notifications -->
-    <div class="brb-section" style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
-      <h3>ACTIVITY FEED</h3>
-      <div class="notif-panel" id="brb-notif-panel" style="max-height:150px;"></div>
-    </div>
+  <div id="screen-gameover" class="screen">
+    <div id="go-icon">💀</div>
+    <div id="go-title" class="go-title">GAME OVER</div>
+    <div id="go-reason">Freddy caught you!</div>
+    <button class="btn btn-primary" onclick="location.reload()">Return to Menu</button>
   </div>
-</div>
 
-<!-- ══════════════ SCREEN: GAME OVER ══════════════ -->
-<div id="screen-gameover" class="screen">
-  <div class="go-icon" id="go-icon">💀</div>
-  <div class="go-title" id="go-title">GAME OVER</div>
-  <div class="go-reason" id="go-reason">...</div>
-  <button class="btn btn-dim" style="margin-top:20px;" onclick="location.reload()">↩ RETURN TO MENU</button>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-// ─── Socket & State ────────────────────────────────────────────────────────
-const socket = io();
-
-let myId        = null;
-let myRole      = null;
-let roomCode    = null;
-let isHost      = false;
-let canMove     = false;
-let stepSecs    = 10;
-let stepTimer   = null;
-let powerHoldTimer = null;
-let powerHoldStart = null;
-let powerProgressInterval = null;
-let positions   = {};
-
-const ROOM_LABELS = {
-  FRONT_AREA:       'FRONT AREA',
-  PORCH:            'PORCH',
-  LIVING_ROOM:      'LIVING ROOM',
-  BEDROOM:          'BEDROOM',
-  FOXY_COVE:        "FOXY'S COVE",
-  KITCHEN:          'KITCHEN',
-  RESTRICTED_UPPER: '/restricted/ (UPPER)',
-  RESTRICTED_LOWER: '/restricted/ (LOWER)',
-  OFFICE:           'OFFICE',
-  CHICKEN_COOP:     'CHICKEN COOP'
-};
-
-const ADJACENCY = {
-  FRONT_AREA:       ['PORCH', 'LIVING_ROOM', 'KITCHEN'],
-  PORCH:            ['FRONT_AREA', 'BEDROOM'],
-  LIVING_ROOM:      ['FRONT_AREA', 'KITCHEN', 'BEDROOM'],
-  BEDROOM:          ['PORCH', 'LIVING_ROOM', 'FOXY_COVE', 'RESTRICTED_UPPER'],
-  FOXY_COVE:        ['BEDROOM'],
-  KITCHEN:          ['FRONT_AREA', 'LIVING_ROOM', 'RESTRICTED_UPPER'],
-  RESTRICTED_UPPER: ['KITCHEN', 'BEDROOM', 'RESTRICTED_LOWER'],
-  RESTRICTED_LOWER: ['RESTRICTED_UPPER', 'OFFICE'],
-  OFFICE:           ['RESTRICTED_LOWER', 'CHICKEN_COOP'],
-  CHICKEN_COOP:     ['OFFICE']
-};
-
-// Map room → SVG center coords
-const ROOM_COORDS = {
-  FRONT_AREA:       { x: 190, y: 55 },
-  PORCH:            { x: 245, y: 87 },
-  LIVING_ROOM:      { x: 189, y: 141 },
-  BEDROOM:          { x: 303, y: 141 },
-  FOXY_COVE:        { x: 345, y: 146 },
-  KITCHEN:          { x: 166, y: 198 },
-  RESTRICTED_UPPER: { x: 266, y: 182 },
-  RESTRICTED_LOWER: { x: 132, y: 273 },
-  OFFICE:           { x: 263, y: 280 },
-  CHICKEN_COOP:     { x: 185, y: 378 }
-};
-
-const CHAR_COLOR = {
-  freddy: '#8B5E3C', chica: '#FFD700', bonnie: '#9B59B6',
-  foxy: '#FF4500', nightguard: '#4488ff'
-};
-const CHAR_EMOJI = {
-  freddy:'🐻', chica:'🐥', bonnie:'🐰', foxy:'🦊', nightguard:'👮'
-};
-const CHAR_LABEL = {
-  freddy:'F', chica:'C', bonnie:'B', foxy:'X', nightguard:'G'
-};
-
-// ─── Screen Management ─────────────────────────────────────────────────────
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function toggleForm(which) {
-  document.getElementById('host-form').classList.remove('open');
-  document.getElementById('join-form').classList.remove('open');
-  document.getElementById(`${which}-form`).classList.add('open');
-}
-
-// ─── Menu Actions ──────────────────────────────────────────────────────────
-function getPlayerName() {
-  const n = document.getElementById('player-name').value.trim();
-  if (!n) { showMenuError('Enter your name first!'); return null; }
-  return n;
-}
-function showMenuError(msg) {
-  const el = document.getElementById('menu-error');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-function createRoom() {
-  const name = getPlayerName(); if (!name) return;
-  const code = document.getElementById('host-code').value.trim().toUpperCase();
-  if (!code) { showMenuError('Enter a room code!'); return; }
-  socket.emit('create_room', { name, code });
-}
-
-function joinRoom() {
-  const name = getPlayerName(); if (!name) return;
-  const code = document.getElementById('join-code').value.trim().toUpperCase();
-  if (!code) { showMenuError('Enter a room code!'); return; }
-  socket.emit('join_room', { name, code });
-}
-
-// ─── Lobby Actions ─────────────────────────────────────────────────────────
-function selectRole(role) {
-  myRole = role;
-  socket.emit('select_role', { code: roomCode, role });
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById(`role-${role}`)?.classList.add('selected');
-}
-
-function startGame() {
-  socket.emit('start_game', { code: roomCode });
-}
-
-function updateLobbyUI(room) {
-  const list = document.getElementById('player-list');
-  list.innerHTML = '';
-  Object.values(room.players).forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'player-item' + (p.role ? ' has-role' : '');
-    div.innerHTML = `
-      <span class="p-icon">${p.role ? CHAR_EMOJI[p.role] : '❓'}</span>
-      <span class="p-name">${p.name}${p.socketId === room.host ? ' 👑' : ''}</span>
-      <span class="p-role" style="color:${p.role ? CHAR_COLOR[p.role] : '#444'}">${p.role ? p.role.toUpperCase() : 'no role'}</span>
-    `;
-    list.appendChild(div);
-  });
-
-  // Update taken roles
-  const takenRoles = new Set(Object.values(room.players).filter(p => p.socketId !== myId).map(p => p.role));
-  ['freddy','chica','bonnie','foxy','nightguard'].forEach(role => {
-    const btn = document.getElementById(`role-${role}`);
-    if (btn) { btn.classList.toggle('taken', takenRoles.has(role)); }
-  });
-
-  // Host start button
-  const startBtn = document.getElementById('start-game-btn');
-  const waitMsg  = document.getElementById('waiting-msg');
-  if (isHost) {
-    startBtn.style.display = 'inline-block';
-    waitMsg.style.display = 'none';
-  } else {
-    startBtn.style.display = 'none';
-    waitMsg.style.display = 'block';
-  }
-}
-
-// ─── Game UI ───────────────────────────────────────────────────────────────
-function updatePower(pct) {
-  const v = Math.max(0, pct);
-  document.getElementById('power-bar-fill').style.width = v + '%';
-  document.getElementById('power-pct').textContent = Math.ceil(v);
-}
-
-function updateMusicBox(pct) {
-  const v = Math.max(0, pct);
-  ['music-bar-fill','ng-music-bar-fill','brb-music-bar-fill'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.width = v + '%';
-  });
-  ['music-pct','brb-music-pct'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = Math.ceil(v);
-  });
-}
-
-function updateTimer(secs) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  document.getElementById('game-timer').textContent = `${m}:${String(s).padStart(2,'0')}`;
-}
-
-function updateDoorUI(locked) {
-  const btn = document.getElementById('door-btn');
-  const lockIndicator = document.getElementById('door-lock-indicator');
-  if (locked) {
-    btn.textContent = '🔒 DOOR LOCKED';
-    btn.className = 'btn locked';
-    if (lockIndicator) lockIndicator.style.display = 'block';
-  } else {
-    btn.textContent = '🔓 DOOR OPEN';
-    btn.className = 'btn unlocked';
-    if (lockIndicator) lockIndicator.style.display = 'none';
-  }
-}
-
-// Render animatronic dots on the SVG map
-function renderMap(pos) {
-  positions = pos || positions;
-  const dotsGroup = document.getElementById('anim-dots');
-  if (!dotsGroup) return;
-  dotsGroup.innerHTML = '';
-
-  // Group by room
-  const byRoom = {};
-  Object.values(positions).forEach(p => {
-    if (!p.currentRoom) return;
-    if (!byRoom[p.currentRoom]) byRoom[p.currentRoom] = [];
-    byRoom[p.currentRoom].push(p);
-  });
-
-  // Check if any animatronic is near the office
-  const dangerRooms = ['RESTRICTED_LOWER', 'OFFICE'];
-  let danger = false;
-
-  Object.entries(byRoom).forEach(([room, players]) => {
-    const coord = ROOM_COORDS[room];
-    if (!coord) return;
-    if (dangerRooms.includes(room)) {
-      players.forEach(p => { if (p.role !== 'nightguard') danger = true; });
-    }
-    players.forEach((p, i) => {
-      if (p.role === 'nightguard') return; // don't show guard on map
-
-      const ns = 'http://www.w3.org/2000/svg';
-      const offset = (i - (players.filter(x=>x.role!=='nightguard').length - 1) / 2) * 14;
-
-      // Pulsing circle
-      const circle = document.createElementNS(ns, 'circle');
-      circle.setAttribute('cx', coord.x + offset);
-      circle.setAttribute('cy', coord.y);
-      circle.setAttribute('r', '7');
-      circle.setAttribute('fill', CHAR_COLOR[p.role] || '#fff');
-      circle.setAttribute('opacity', '0.9');
-      const anim = document.createElementNS(ns, 'animate');
-      anim.setAttribute('attributeName', 'r');
-      anim.setAttribute('values', '6;8;6');
-      anim.setAttribute('dur', '1.5s');
-      anim.setAttribute('repeatCount', 'indefinite');
-      circle.appendChild(anim);
-      dotsGroup.appendChild(circle);
-
-      // Label
-      const label = document.createElementNS(ns, 'text');
-      label.setAttribute('x', coord.x + offset);
-      label.setAttribute('y', coord.y - 10);
-      label.setAttribute('text-anchor', 'middle');
-      label.setAttribute('fill', CHAR_COLOR[p.role] || '#fff');
-      label.setAttribute('font-size', '8');
-      label.setAttribute('font-family', 'Courier New');
-      label.textContent = CHAR_LABEL[p.role] || '?';
-      dotsGroup.appendChild(label);
-    });
-  });
-
-  // Danger warning
-  const dangerEl = document.getElementById('door-danger');
-  if (dangerEl) dangerEl.classList.toggle('show', danger);
-
-  if (danger) flashDanger();
-}
-
-function flashDanger() {
-  const f = document.getElementById('danger-flash');
-  f.classList.remove('flash');
-  void f.offsetWidth;
-  f.classList.add('flash');
-}
-
-// ─── Animatronic Movement UI ───────────────────────────────────────────────
-function renderMoveButtons(myCurrentRoom) {
-  const grid = document.getElementById('move-grid');
-  const noMove = document.getElementById('no-move-msg');
-  const blocked = document.getElementById('blocked-msg');
-  if (!grid) return;
-  grid.innerHTML = '';
-  blocked.classList.remove('show');
-
-  const adjacent = ADJACENCY[myCurrentRoom] || [];
-
-  if (!canMove) {
-    noMove.style.display = 'block';
-    adjacent.forEach(room => {
-      const btn = document.createElement('button');
-      btn.className = 'move-btn';
-      btn.textContent = ROOM_LABELS[room] || room;
-      btn.disabled = true;
-      grid.appendChild(btn);
-    });
-    return;
-  }
-  noMove.style.display = 'none';
-  adjacent.forEach(room => {
-    const btn = document.createElement('button');
-    btn.className = 'move-btn';
-    btn.textContent = ROOM_LABELS[room] || room;
-    btn.onclick = () => moveToRoom(room);
-    grid.appendChild(btn);
-  });
-}
-
-function updateAnimatronicLocation(room) {
-  const disp = document.getElementById('char-room-display');
-  if (disp) disp.textContent = ROOM_LABELS[room] || room;
-}
-
-// ─── Game Actions ──────────────────────────────────────────────────────────
-function toggleDoor() { socket.emit('toggle_door', { code: roomCode }); }
-function windMusicBox() { socket.emit('wind_music_box', { code: roomCode }); }
-function goBRB() { socket.emit('nightguard_brb', { code: roomCode }); }
-function returnToOffice() {
-  const pw = document.getElementById('brb-password').value;
-  socket.emit('nightguard_return', { code: roomCode, password: pw });
-}
-function moveToRoom(room) { socket.emit('move', { code: roomCode, targetRoom: room }); }
-function foxyRush() { socket.emit('foxy_rush', { code: roomCode }); }
-
-// Power hold button
-let powerHoldInterval = null;
-function startPowerHold() {
-  const prog = document.getElementById('power-progress');
-  let held = 0;
-  prog.style.width = '0%';
-  powerHoldInterval = setInterval(() => {
-    held += 100;
-    prog.style.width = Math.min(100, held / 30 * 100) + '%';
-    if (held >= 3000) {
-      clearInterval(powerHoldInterval);
-      socket.emit('restore_power', { code: roomCode });
-    }
-  }, 100);
-}
-function stopPowerHold() {
-  clearInterval(powerHoldInterval);
-  document.getElementById('power-progress').style.width = '0%';
-}
-
-// ─── Step Countdown ────────────────────────────────────────────────────────
-function resetStepCountdown() {
-  stepSecs = 10;
-  if (stepTimer) clearInterval(stepTimer);
-  const disp = document.getElementById('step-timer-display');
-  stepTimer = setInterval(() => {
-    stepSecs = Math.max(0, stepSecs - 1);
-    if (disp) disp.textContent = stepSecs;
-  }, 1000);
-}
-
-// ─── Notifications ─────────────────────────────────────────────────────────
-function addNotif(panelId, msg, type = '') {
-  const panel = document.getElementById(panelId);
-  if (!panel) return;
-  const div = document.createElement('div');
-  div.className = `notif-item ${type}`;
-  div.textContent = msg;
-  panel.prepend(div);
-  // Cap at 30 notifications
-  while (panel.children.length > 30) panel.removeChild(panel.lastChild);
-}
-
-function notifAll(msg) {
-  const type = msg.includes('FOXY') || msg.includes('RUNNING') ? 'danger' : 'warning';
-  addNotif('ng-notif-panel', msg, type);
-  addNotif('anim-notif-panel', msg, type);
-  addNotif('brb-notif-panel', msg, type);
-}
-function notifAnimatronics(msg) {
-  addNotif('anim-notif-panel', msg, 'info');
-  addNotif('brb-notif-panel', msg, 'info');
-}
-function notifNightguard(msg) {
-  addNotif('ng-notif-panel', msg, 'warning');
-}
-
-// ─── Error display ─────────────────────────────────────────────────────────
-function showLobbyError(msg) {
-  const el = document.getElementById('lobby-error');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-function showBRBError(msg) {
-  const el = document.getElementById('brb-error');
-  el.textContent = msg; el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 3000);
-}
-
-// ─── Socket Event Handlers ─────────────────────────────────────────────────
-socket.on('connect', () => { myId = socket.id; });
-
-socket.on('room_created', ({ code }) => {
-  roomCode = code; isHost = true;
-  document.getElementById('lobby-code-display').textContent = code;
-  document.getElementById('start-game-btn').style.display = 'inline-block';
-  document.getElementById('waiting-msg').style.display = 'none';
-  showScreen('screen-lobby');
-});
-
-socket.on('room_joined', ({ code }) => {
-  roomCode = code; isHost = false;
-  document.getElementById('lobby-code-display').textContent = code;
-  showScreen('screen-lobby');
-});
-
-socket.on('room_update', room => { updateLobbyUI(room); });
-
-socket.on('game_started', ({ players, gameState }) => {
-  // Determine my role from players
-  const me = players[myId];
-  if (me) { myRole = me.role; }
-
-  // Show game screen
-  showScreen('screen-game');
-  document.getElementById('ng-view').style.display = 'none';
-  document.getElementById('anim-view').style.display = 'none';
-
-  if (myRole === 'nightguard') {
-    document.getElementById('ng-view').style.display = 'flex';
-  } else {
-    document.getElementById('anim-view').style.display = 'flex';
-    // Setup character display
-    document.getElementById('char-icon').textContent = CHAR_EMOJI[myRole] || '?';
-    document.getElementById('char-name').textContent = myRole.toUpperCase();
-    document.getElementById('char-name').style.color = CHAR_COLOR[myRole] || '#fff';
-    const myPos = players[myId];
-    if (myPos) updateAnimatronicLocation(myPos.currentRoom);
-    renderMoveButtons(players[myId]?.currentRoom || 'FRONT_AREA');
-  }
-
-  // Initial map render
-  const pos = {};
-  Object.values(players).forEach(p => {
-    pos[p.socketId] = { name: p.name, role: p.role, currentRoom: p.currentRoom };
-  });
-  renderMap(pos);
-
-  // Init power & music bars
-  updatePower(gameState.power);
-  updateMusicBox(gameState.musicBox);
-  updateTimer(gameState.gameTime);
-
-  // Start step countdown for animatronics
-  if (myRole !== 'nightguard') resetStepCountdown();
-});
-
-socket.on('step', pos => {
-  // This fires every 10s – animatronics can now move
-  const myPosData = pos[myId];
-  canMove = myPosData ? myPosData.canMove : false;
-
-  renderMap(pos);
-
-  if (myRole !== 'nightguard') {
-    resetStepCountdown();
-    if (canMove) {
-      // Flash STEP alert
-      const alert = document.getElementById('step-alert');
-      alert.classList.add('show');
-      setTimeout(() => alert.classList.remove('show'), 3000);
-    }
-    // Update movement buttons
-    const myData = pos[myId];
-    if (myData) renderMoveButtons(myData.currentRoom);
-  }
-});
-
-socket.on('positions_update', pos => {
-  renderMap(pos);
-  // Update my own position if I'm an animatronic
-  if (myRole !== 'nightguard') {
-    const myData = pos[myId];
-    if (myData) {
-      canMove = myData.canMove;
-      updateAnimatronicLocation(myData.currentRoom);
-      renderMoveButtons(myData.currentRoom);
-    }
-  }
-});
-
-socket.on('power_update', pct => updatePower(pct));
-socket.on('music_box_update', pct => updateMusicBox(pct));
-socket.on('timer_update', secs => updateTimer(secs));
-socket.on('door_update', locked => updateDoorUI(locked));
-
-socket.on('power_out', () => {
-  document.getElementById('power-restore-panel').classList.add('show');
-  notifAll('⚡ POWER OUT! Animatronics are in free roam!');
-  flashDanger();
-});
-
-socket.on('power_restored', pct => {
-  document.getElementById('power-restore-panel').classList.remove('show');
-  updatePower(pct);
-  notifNightguard('⚡ Emergency power restored!');
-});
-
-socket.on('music_box_empty', () => {
-  notifNightguard('🎵 MUSIC BOX RAN DOWN! Foxy has been unleashed!');
-  flashDanger();
-});
-
-socket.on('notif_all', msg => notifAll(msg));
-
-socket.on('anim_notif', msg => {
-  notifAnimatronics(msg);
-  // Also add to nightguard (they should know)
-  if (myRole === 'nightguard') addNotif('ng-notif-panel', msg, 'info');
-});
-
-socket.on('foxy_can_run', () => {
-  const btn = document.getElementById('foxy-rush-btn');
-  if (btn) btn.classList.add('show');
-  addNotif('anim-notif-panel', '🦊 MUSIC BOX IS DOWN — YOU CAN RUSH!', 'danger');
-});
-
-socket.on('foxy_run_revoked', () => {
-  const btn = document.getElementById('foxy-rush-btn');
-  if (btn) btn.classList.remove('show');
-  addNotif('anim-notif-panel', '🎵 Music box was wound up — Rush cancelled.', 'info');
-});
-
-socket.on('show_brb', () => {
-  showScreen('screen-brb');
-});
-
-socket.on('return_to_office', () => {
-  document.getElementById('brb-password').value = '';
-  showScreen('screen-game');
-  addNotif('ng-notif-panel', '🖥️ Returned to office — game on!', 'info');
-});
-
-socket.on('blocked', () => {
-  const msg = document.getElementById('blocked-msg');
-  if (msg) {
-    msg.classList.add('show');
-    setTimeout(() => msg.classList.remove('show'), 2500);
-  }
-  flashDanger();
-  addNotif('anim-notif-panel', '🚪 BLOCKED — Door is locked!', 'danger');
-});
-
-socket.on('error_msg', msg => {
-  // Show in whichever screen is active
-  const active = document.querySelector('.screen.active')?.id;
-  if (active === 'screen-menu') showMenuError(msg);
-  else if (active === 'screen-lobby') showLobbyError(msg);
-  else if (active === 'screen-brb') showBRBError(msg);
-  else { notifAll('⚠ ' + msg); }
-});
-
-socket.on('game_over', ({ winner, reason }) => {
-  showScreen('screen-gameover');
-  const titleEl = document.getElementById('go-title');
-  const iconEl  = document.getElementById('go-icon');
-  const reasonEl = document.getElementById('go-reason');
-  reasonEl.textContent = reason;
-  if (winner === 'nightguard') {
-    titleEl.textContent = '🌅 YOU SURVIVED!';
-    titleEl.className = 'go-title nightguard-wins';
-    iconEl.textContent = '🌅';
-  } else {
-    titleEl.textContent = 'GAME OVER';
-    titleEl.className = 'go-title animatronics-win';
-    iconEl.textContent = '💀';
-    flashDanger(); flashDanger();
-  }
-});
-
-// ─── Keyboard Controls ─────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  const active = document.querySelector('.screen.active')?.id;
-  if (e.code === 'Space' && myRole === 'nightguard' && active === 'screen-game') {
-    e.preventDefault();
-    toggleDoor();
-  }
-  if (e.code === 'Enter') {
-    const active2 = document.querySelector('.screen.active')?.id;
-    if (active2 === 'screen-brb') returnToOffice();
-  }
-});
-
-// ─── Enter key helpers for menu forms ─────────────────────────────────────
-document.getElementById('host-code').addEventListener('keydown', e => {
-  if (e.key === 'Enter') createRoom();
-});
-document.getElementById('join-code').addEventListener('keydown', e => {
-  if (e.key === 'Enter') joinRoom();
-});
-document.getElementById('brb-password').addEventListener('keydown', e => {
-  if (e.key === 'Enter') returnToOffice();
-});
-</script>
-</body>
-</html>
+  <script src="https://cdn.socket.io/4.6.1/socket.io.min.js"></script>
+  
+  <script>
+// UPDATED: Replace the URL below with your Render URL!
+const socket = io("https://your-app-name.onrender.com");
+
+let myName = "";
+let myRole = null;
+let myPos  = null;
+let roomCode = "";
+let players = [];
+let isStepActive = false;
+let restoreTimer = null;
+let restoreProgress = 0;
+
+const ROOM_DATA = {
+  FRONT_AREA:       { name: "Front Area", icon: "🏢" },
+  PORCH:            { name: "Porch", icon: "🚪" },
+  LIVING_ROOM:      { name: "Living Room", icon: "🛋️" },
+  BEDROOM:          { name: "Bedroom", icon: "🛏️" },
+  FOXY_COVE:        { name: "Foxy's Cove", icon: "🦊" },
+  KITCHEN:          { name: "Kitchen", icon: "🍕" },
+  RESTRICTED_UPPER: { name: "Restricted Upper", icon: "🚧" },
